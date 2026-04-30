@@ -74,6 +74,7 @@ public enum ApiError {
     OIDC_LOGOUT_REPLAY(HttpStatus.BAD_REQUEST, "Logout token has already been processed"),
     OIDC_LOGOUT_MISSING_JTI(HttpStatus.BAD_REQUEST, "Logout token missing required jti claim"),
     OIDC_INVALID_STATE(HttpStatus.BAD_REQUEST, "Invalid or expired OIDC state parameter");
+    PAGE_COUNT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "Error getting page count for book with ID : %d")
 
     private final HttpStatus status;
     private final String message;

@@ -7,6 +7,7 @@ import org.booklore.mapper.MetadataClearFlagsMapper;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
+import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.request.BulkMetadataUpdateRequest;
@@ -262,5 +263,28 @@ public class BookMetadataService {
             notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(book, true));
             return null;
         });
+    }
+
+    public void updatePageCount(Long bookId, int pageCount) {
+        // 1. Get book
+        BookEntity book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found"));
+
+        // 2. Construct metadata
+        BookMetadata metadata = new BookMetadata();
+        metadata.setPageCount(pageCount);
+
+        // 3. Wrapper
+        MetadataUpdateWrapper wrapper = new MetadataUpdateWrapper();
+        wrapper.setMetadata(metadata);
+
+        // 4. Context
+        MetadataUpdateContext context = new MetadataUpdateContext();
+        context.setBookEntity(book);
+        context.setMetadataUpdateWrapper(wrapper);
+        context.setReplaceMode(MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        // 5. Call update
+        bookMetadataUpdater.setBookMetadata(context);
     }
 }

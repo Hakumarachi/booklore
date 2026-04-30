@@ -44,6 +44,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
@@ -308,4 +309,35 @@ public class BookController {
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
         return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));
     }
+
+    @Operation(summary = "Sync pages book", description = "Get real page number and sync it in database. Requires admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book sync pages successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    @PreAuthorize("@securityUtil.isAdmin()")
+    @PostMapping("/{bookId}/sync-page-count")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public ResponseEntity<?> syncPageCount(@Parameter(description = "ID of the book") @PathVariable Long bookId) throws java.io.IOException {
+        int pageCount = bookService.syncPageCount(bookId);
+        return ResponseEntity.ok(Map.of(
+                "bookId", bookId,
+                "pageCount", pageCount
+        ));
+    }
+
+    @Operation(summary = "Sync pages all books", description = "Get real page number and sync it in database for all books. Requires admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Books sync pages successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    @PreAuthorize("@securityUtil.isAdmin()")
+    @PostMapping("/sync-page-count")
+    public ResponseEntity<?> syncAllPageCount() throws java.io.IOException {
+        bookService.syncAllPageCount();
+        return ResponseEntity.ok(Map.of(
+                "status", "completed"
+        ));
+    }
+
 }

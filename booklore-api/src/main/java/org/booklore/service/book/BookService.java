@@ -16,6 +16,7 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.*;
 import org.booklore.repository.BookFileRepository;
 import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
+import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.progress.ReadingProgressService;
 import org.booklore.service.FileStreamingService;
@@ -51,6 +52,8 @@ import org.booklore.service.audit.AuditService;
 @Service
 public class BookService {
 
+    private final BookMetadataService bookMetadataService;
+    private final BookPageCountService bookPageCountService;
     private final BookRepository bookRepository;
     private final BookFileRepository bookFileRepository;
     private final PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
@@ -513,6 +516,27 @@ public class BookService {
         return shelves.stream()
                 .filter(shelf -> userId.equals(shelf.getUserId()))
                 .collect(Collectors.toSet());
+    }
+
+    @Transactional
+    public int syncPageCount(long bookId) throws IOException {
+        int pageCount = bookPageCountService.extractPageCount(bookId);
+
+        bookMetadataService.updatePageCount(bookId, pageCount);
+        return pageCount;
+    }
+
+    @Transactional
+    public void syncAllPageCount() throws IOException {
+        List<Book> books = bookQueryService.getAllBooks(false);
+        for (Book book : books) {
+            try {
+                int pageCount = syncPageCount(book.getId());
+                log.info("Updated book {} pageCount={}", book.getId(), pageCount);
+            } catch (Exception e) {
+                log.warn("Failed to update book {}: {}", book.getId(), e.getMessage());
+            }
+        }
     }
 
 }
